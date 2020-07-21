@@ -8,3 +8,5 @@ Properties/
 packages/
 
 bin/
+
+FodyWeavers.xsd
