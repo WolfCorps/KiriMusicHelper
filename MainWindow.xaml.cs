@@ -14,11 +14,13 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 
 namespace KiriMusicHelper {
-    /// <summary>
-    /// Interaktionslogik für MainWindow.xaml
-    /// </summary>
+
+
+
     public partial class MainWindow : Window {
-        public MainWindow() {
+        public MainWindow()
+        {
+            AudioEncoder.Init();
             InitializeComponent();
         }
     }
