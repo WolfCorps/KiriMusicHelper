@@ -22,6 +22,19 @@ namespace KiriMusicHelper {
         {
             AudioEncoder.Init();
             InitializeComponent();
+            
+        }
+
+        private async void Button_Click(object sender, RoutedEventArgs e)
+        {
+            await AudioEffect.DoStuff();
+
+            var p = new FilterRack.FilterRack(AudioEffect.Instance);
+            p.Show();
+
+
+           
+
         }
     }
 }

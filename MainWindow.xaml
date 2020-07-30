@@ -5,8 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:KiriMusicHelper"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="KiriMusicHelper" Height="450" Width="800">
+    <StackPanel>
+        <Button Content="Testbuttom" Click="Button_Click" />
         <local:AudioConversion></local:AudioConversion>
-    </Grid>
+        
+    </StackPanel>
 </Window>

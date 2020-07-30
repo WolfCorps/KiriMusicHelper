@@ -24,85 +24,79 @@
 
         <Canvas HorizontalAlignment="Left" >
             <Button Content="Lade Ordner" HorizontalAlignment="Left" VerticalAlignment="Top" Width="94" Click="LoadFolder_Click" Height="21" Canvas.Left="16" Canvas.Top="24"/>
+            <Button Content="Lade Datei" HorizontalAlignment="Left" VerticalAlignment="Top" Width="94" Click="LoadFile_Click" Height="21" Canvas.Left="115" Canvas.Top="24"/>
 
             <ListView 
                 HorizontalAlignment="Left"
                 Height="209"
-                Margin="31,108,0,0"
                 VerticalAlignment="Top"
                 Width="338"
             
-                ItemsSource="{Binding AudioFiles, ElementName=AudioConversionRoot}" 
+                ItemsSource="{Binding AudioFiles, ElementName=AudioConversionRoot}" Canvas.Left="16" Canvas.Top="50" 
             >
                 <ListView.ItemTemplate>
                     <DataTemplate DataType="local:AudioFile">
-                        <StackPanel Orientation="Horizontal">
-                            <CheckBox IsChecked="{Binding Enabled}"/>
-                            <Label Content="{Binding FileName}"/>
-                            <Label Content="{Binding BitRate}"/>
-                            <Label Content="{Binding SamplingRate}"/>
+                        <StackPanel Orientation="Vertical" Height="50">
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox IsChecked="{Binding Enabled}"/>
+                                <Label Content="{Binding FileName}"/>
+                                <Label Content="{Binding BitRate}"/>
+                                <Label Content="{Binding SamplingRate}"/>
+                            </StackPanel>
+                            <ProgressBar Value="{Binding ConversionProgress}" Height="20"/>
                         </StackPanel>
+                        
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
 
-<TextBox Text="{Binding ConversionParameters.PboPrefix, ElementName=AudioConversionRoot, UpdateSourceTrigger=PropertyChanged}"  Width="147" Canvas.Left="42" Canvas.Top="349" />
+            <TextBox Text="{Binding ConversionParameters.PboPrefix, ElementName=AudioConversionRoot, UpdateSourceTrigger=PropertyChanged}"  Width="148" Canvas.Left="80" Canvas.Top="270" />
 
-<ComboBox Name="MusicClass" Canvas.Left="59" Canvas.Top="389" 
+            <ComboBox Name="MusicClass" Canvas.Left="82" Canvas.Top="295" 
           SelectedValue="{Binding ConversionParameters.MusicClass, ElementName=AudioConversionRoot, Mode=OneWayToSource}" 
-          SelectedValuePath="Content"
+          SelectedValuePath="Content" RenderTransformOrigin="0.464,0.5"
           >
-    <ComboBoxItem IsSelected="True">Action</ComboBoxItem>
-    <ComboBoxItem>Calm</ComboBoxItem>
-    <ComboBoxItem>Exciting</ComboBoxItem>
-    <ComboBoxItem>Stealth</ComboBoxItem>
-</ComboBox>
+                <ComboBoxItem IsSelected="True">Action</ComboBoxItem>
+                <ComboBoxItem>Calm</ComboBoxItem>
+                <ComboBoxItem>Exciting</ComboBoxItem>
+                <ComboBoxItem>Stealth</ComboBoxItem>
+            </ComboBox>
+            <Button Content="Öffne Filter einstellungen" HorizontalAlignment="Left" VerticalAlignment="Top" Width="140" Click="OpenEffectsRack_Click" Height="21" Canvas.Left="16" Canvas.Top="322" IsEnabled="{Binding CanOpenFilterRack, ElementName=AudioConversionRoot}"/>
+            <Button Content="Öffne Live Preview" HorizontalAlignment="Left" VerticalAlignment="Top" Width="134" Click="OpenLivePlay_Click" Height="21" Canvas.Left="161" Canvas.Top="322" IsEnabled="{Binding CanOpenLivePreview, ElementName=AudioConversionRoot}"/>
+            <Button Content="Starte Export!!" HorizontalAlignment="Left" VerticalAlignment="Top" Width="134" Click="RunConversion_Click" Height="21" Canvas.Left="161" Canvas.Top="348" IsEnabled="{Binding CanEncode, ElementName=AudioConversionRoot}"/>
 
 
         </Canvas>
 
-        
-        <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" Margin="126,0,0,0" Width="5" RenderTransformOrigin="0.5,0.5"/>
-        <TextBox Grid.Column="2" 
-                 TextWrapping="Wrap" 
-                Name="ConfigText"
 
-            Text="{Binding AudioFiles, ElementName=AudioConversionRoot,
-                Converter={StaticResource AudioFilesToCfgMusicConverter},
-                Mode=OneWay
-            }"
+        <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" Margin="126,0,0,0" Width="5" RenderTransformOrigin="0.5,0.5"/>
+        <TextBox 
+            Grid.Column="2"
+                TextWrapping="Wrap" 
+                Name="ConfigText"
+                VerticalAlignment="Stretch"
+
+                Text="{Binding AudioFiles, ElementName=AudioConversionRoot,
+                    Converter={StaticResource AudioFilesToCfgMusicConverter},
+                    Mode=OneWay
+                }"
 
 
         >
-
-            <!--
-            //Manually created in source
-              Text="{Binding ConversionParameters.AudioFiles, ElementName=AudioConversionRoot,
-               Converter={StaticResource AudioFilesToCfgMusicConverter},
-                ConverterParameter={Binding ConversionParameters, ElementName=AudioConversionRoot, Mode=OneWay},
-               Mode=OneWay
-        }"
-            
-            
-Text="{
-        local:ConverterBindableParameter 
-           Binding={Binding AudioFiles, ElementName=AudioConversionRoot},
-           Converter={StaticResource AudioFilesToCfgMusicConverter},
-           ConverterParameter={Binding ConversionParameters, ElementName=AudioConversionRoot, Mode=OneWay},
-           Mode=OneWay
-        }"
--->
-
-            <!--<TextBox.Text>
-                <local:ConverterBindableParameter 
-                    Binding="{Binding AudioFiles, ElementName=AudioConversionRoot}"
-                    Converter="{StaticResource AudioFilesToCfgMusicConverter}"
-                    ConverterParameter="{Binding ConversionParameters, ElementName=AudioConversionRoot, Mode=OneWay}"
-                    Mode="OneWay"
-                />
-            </TextBox.Text>-->
         </TextBox>
-        
+        <Label Content="Pbo Prefix" HorizontalAlignment="Left" Margin="10,265,0,0" VerticalAlignment="Top"/>
+        <Label Content="Music Class" HorizontalAlignment="Left" Margin="10,296,0,0" VerticalAlignment="Top"/>
+
+        <Slider 
+
+                Minimum="48"
+                Maximum="320"
+                
+                SmallChange="8" 
+                Value="{Binding TargetBitrate, ElementName=AudioConversionRoot}" TickFrequency="64" TickPlacement="BottomRight" LargeChange="8" AutoToolTipPlacement="TopLeft" AutoToolTipPrecision="0" Margin="132,289,5,135"
+        />
+
+
 
     </Grid>
 </UserControl>

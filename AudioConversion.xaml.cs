@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -6,20 +7,27 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.Remoting.Channels;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
+using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using CSCore.Codecs;
 using KiriMusicHelper.Annotations;
+using KiriMusicHelper.Waveform;
 using Ookii.Dialogs.Wpf;
+using Binding = System.Windows.Data.Binding;
+using Path = System.IO.Path;
+using TextBox = System.Windows.Controls.TextBox;
 using UserControl = System.Windows.Controls.UserControl;
 
 namespace KiriMusicHelper {
@@ -99,13 +107,13 @@ public class ConverterBindableParameter : MarkupExtension
 
     public class AudioConversionParameters : INotifyPropertyChanged
     {
-        public string PboPrefix { get; set; } = "";
+        public string PboPrefix { get; set; } = "KiriMusic_A2";
         public string MusicClass { get; set; } = "Action";
         public event PropertyChangedEventHandler PropertyChanged;
     }
 
 
-    public class AudioFile
+    public class AudioFile: INotifyPropertyChanged
     {
         public FileInfo InputFile;
         public bool Enabled { get; set; } = true;
@@ -113,6 +121,8 @@ public class ConverterBindableParameter : MarkupExtension
         public long BitRate { get; set; }
         public int SamplingRate { get; set; }
         public double Duration { get; set; }
+
+        public double ConversionProgress { get; set; }
 
         public string GetCfgSoundsClass(AudioConversionParameters param)
         {
@@ -123,6 +133,14 @@ public class ConverterBindableParameter : MarkupExtension
                    $"    musicClass=\"{param.MusicClass}\"\n" +
                    $"}};";
 
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        [NotifyPropertyChangedInvocator]
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 
@@ -166,7 +184,6 @@ public class ConverterBindableParameter : MarkupExtension
                 Source = this,
                 Converter = new AudioFilesToCfgMusicConverter(),
                 ConverterParameter = ConversionParameters
-
             };
          
             //_inputBinding.Converter = new AudioFilesToCfgMusicConverter {param = ConversionParameters};
@@ -178,15 +195,34 @@ public class ConverterBindableParameter : MarkupExtension
 
                 upx.UpdateTarget();
             };
-
+            encoder.OnProgress += (sender, conversion, args) =>
+            {
+                var file = AudioFiles.FirstOrDefault((x => x.FileName == conversion.FileName));
+                if (file == null) return;
+                file.ConversionProgress = args.Percent;
+            };
         }
 
         public ObservableCollection<AudioFile> AudioFiles { get; set; } = new ObservableCollection<AudioFile>();
         public AudioConversionParameters ConversionParameters { get; set; } = new AudioConversionParameters();
 
+        public int TargetBitrate { get; set; } = 192;
+
+        private AudioEncoder encoder = new AudioEncoder();
+
+       
+
+        private bool FilterRackOpen { get; set; } = false;
+        private bool LivePreviewOpen { get; set; } = false;
+        private bool IsEncoding { get; set; } = false;
+
+        public bool CanOpenLivePreview => FilterRackOpen && !LivePreviewOpen && !IsEncoding;
+        public bool CanOpenFilterRack => !FilterRackOpen;
+        public bool CanEncode => !IsEncoding;
+
         private async void LoadFolder_Click(object sender, RoutedEventArgs e)
         {
-            VistaFolderBrowserDialog x =new VistaFolderBrowserDialog();
+            VistaFolderBrowserDialog x = new VistaFolderBrowserDialog();
             
             x.Description = "burp";
 
@@ -223,6 +259,128 @@ public class ConverterBindableParameter : MarkupExtension
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        private async void LoadFile_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog { Title = "Audiodatei auswählen", Multiselect = true};
+
+            if (openFileDialog.ShowDialog() != DialogResult.OK)
+                return;
+
+            AudioFiles.Clear();
+            foreach (string fileName in openFileDialog.FileNames)
+            {
+                var fileInfo = new FileInfo(fileName);
+                var audioInfo = await AudioEncoder.GetInfo(fileInfo.FullName);
+                var audioStream = audioInfo?.AudioStreams?.FirstOrDefault();
+
+                if (audioStream == null) continue;
+
+
+                AudioFiles.Add(new AudioFile
+                {
+                    InputFile = fileInfo,
+                    FileName = System.IO.Path.GetFileNameWithoutExtension(fileInfo.FullName),
+                    SamplingRate = audioStream.SampleRate,
+                    BitRate = audioStream.Bitrate,
+                    Duration = audioStream.Duration.TotalSeconds
+                });
+            }
+
+            OnPropertyChanged("AudioFiles");
+        }
+
+        private async void OpenEffectsRack_Click(object sender, RoutedEventArgs e)
+        {
+            await AudioEffect.Instance.SetSource(AudioEffect.CreateSource(AudioFiles.FirstOrDefault()?.InputFile.FullName));
+            var p = new FilterRack.FilterRack(AudioEffect.Instance);
+            p.Show();
+            //AudioEffect.Instance.StartLivePlay();
+            FilterRackOpen = true;
+        }
+
+        private async void OpenLivePlay_Click(object sender, RoutedEventArgs e)
+        {
+            var p = new LivePlay();
+            await p.Init();
+            p.Show();
+            LivePreviewOpen = true;
+        }
+
+        private async void RunConversion_Click(object sender, RoutedEventArgs e)
+        {
+        
+            var outputDirectory = Path.Combine(Directory.GetCurrentDirectory(), "out");
+            Directory.CreateDirectory(outputDirectory);
+
+
+            IsEncoding = true;
+
+            int threadCount = Math.Min(4, AudioFiles.Count);
+            Task[] workers = new Task[threadCount];
+            var queue = new ConcurrentQueue<AudioConversionItem>();
+            var effectQueue = new ConcurrentQueue<Tuple<AudioEffect, FileInfo>>();
+
+            if (AudioEffect.Instance.Filters.Count != 0)
+            {
+                foreach (var audioFile in AudioFiles)
+                {
+                    var effect = await AudioEffect.Instance.CopyFor(audioFile.InputFile);
+
+                    effectQueue.Enqueue(new Tuple<AudioEffect, FileInfo>(effect, audioFile.InputFile));
+                }
+            }
+            else
+            {
+                foreach (var audioFile in AudioFiles)
+                {
+                    queue.Enqueue(new AudioConversionItem
+                    {
+                        Bitrate = TargetBitrate * 1000,
+                        InputFile = audioFile.InputFile,
+                        OutputPath = Path.Combine(outputDirectory, Path.ChangeExtension(audioFile.InputFile.Name, ".ogg")),
+                        FileName = System.IO.Path.GetFileNameWithoutExtension(audioFile.InputFile.Name),
+                        SampleRate = 44100
+                    });
+                }
+            }
+
+            for (int i = 0; i < threadCount; ++i)
+            {
+                Task task = new Task(() =>
+                {
+                    while (effectQueue.TryDequeue(out Tuple<AudioEffect, FileInfo> fileToConvert))
+                    {
+                        var tempFile = fileToConvert.Item1.ProcessIntoTempFile();
+
+                        queue.Enqueue(new AudioConversionItem
+                        {
+                            Bitrate = TargetBitrate * 1000,
+                            InputFile = new FileInfo(tempFile),
+                            OutputPath = Path.Combine(outputDirectory, Path.ChangeExtension(fileToConvert.Item2.Name, ".ogg")),
+                            FileName = System.IO.Path.GetFileNameWithoutExtension(fileToConvert.Item2.Name),
+                            SampleRate = 44100
+                        });
+
+                    }
+
+                    while (queue.TryDequeue(out AudioConversionItem fileToConvert))
+                    {
+                        var subTask = encoder.AudioConvert(fileToConvert, CancellationToken.None);
+                        subTask.Wait();
+                    }
+
+                });
+                workers[i] = task;
+                task.Start();
+            }
+
+            Task.WhenAll(workers).ContinueWith((x) =>
+            {
+                IsEncoding = false;
+            });
+            
         }
     }
 }

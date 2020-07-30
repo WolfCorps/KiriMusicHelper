@@ -37,7 +37,16 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>KiriMusicHelper.MainSentry</StartupObject>
+  </PropertyGroup>
   <ItemGroup>
+    <Reference Include="CSCore, Version=1.2.1.2, Culture=neutral, PublicKeyToken=5a08f2b6f4415dea, processorArchitecture=MSIL">
+      <HintPath>packages\CSCore.1.2.1.2\lib\net35-client\CSCore.dll</HintPath>
+    </Reference>
+    <Reference Include="CSCore.Visualization, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\CSCore.Visualization.0.8.9\lib\CSCore.Visualization.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -47,8 +56,18 @@
     <Reference Include="PropertyChanged, Version=3.2.8.0, Culture=neutral, PublicKeyToken=ee3ee20bcf148ddd, processorArchitecture=MSIL">
       <HintPath>packages\PropertyChanged.Fody.3.2.8\lib\net40\PropertyChanged.dll</HintPath>
     </Reference>
+    <Reference Include="Sentry, Version=2.1.5.0, Culture=neutral, PublicKeyToken=fba2ec45388e2af0, processorArchitecture=MSIL">
+      <HintPath>packages\Sentry.2.1.5\lib\net461\Sentry.dll</HintPath>
+    </Reference>
+    <Reference Include="Sentry.PlatformAbstractions, Version=1.1.1.0, Culture=neutral, PublicKeyToken=fba2ec45388e2af0, processorArchitecture=MSIL">
+      <HintPath>packages\Sentry.PlatformAbstractions.1.1.1\lib\net471\Sentry.PlatformAbstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Sentry.Protocol, Version=2.1.5.0, Culture=neutral, PublicKeyToken=fba2ec45388e2af0, processorArchitecture=MSIL">
+      <HintPath>packages\Sentry.Protocol.2.1.5\lib\net46\Sentry.Protocol.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
@@ -68,12 +87,98 @@
     <Reference Include="Xabe.FFmpeg.Downloader, Version=4.1.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\Xabe.FFmpeg.Downloader.4.1.1\lib\netstandard2.0\Xabe.FFmpeg.Downloader.dll</HintPath>
     </Reference>
+    <Reference Include="Xceed.Wpf.AvalonDock, Version=4.0.0.0, Culture=neutral, PublicKeyToken=3e4669d2f30244f4, processorArchitecture=MSIL">
+      <HintPath>packages\Extended.Wpf.Toolkit.4.0.1\lib\net40\Xceed.Wpf.AvalonDock.dll</HintPath>
+    </Reference>
+    <Reference Include="Xceed.Wpf.AvalonDock.Themes.Aero, Version=4.0.0.0, Culture=neutral, PublicKeyToken=3e4669d2f30244f4, processorArchitecture=MSIL">
+      <HintPath>packages\Extended.Wpf.Toolkit.4.0.1\lib\net40\Xceed.Wpf.AvalonDock.Themes.Aero.dll</HintPath>
+    </Reference>
+    <Reference Include="Xceed.Wpf.AvalonDock.Themes.Metro, Version=4.0.0.0, Culture=neutral, PublicKeyToken=3e4669d2f30244f4, processorArchitecture=MSIL">
+      <HintPath>packages\Extended.Wpf.Toolkit.4.0.1\lib\net40\Xceed.Wpf.AvalonDock.Themes.Metro.dll</HintPath>
+    </Reference>
+    <Reference Include="Xceed.Wpf.AvalonDock.Themes.VS2010, Version=4.0.0.0, Culture=neutral, PublicKeyToken=3e4669d2f30244f4, processorArchitecture=MSIL">
+      <HintPath>packages\Extended.Wpf.Toolkit.4.0.1\lib\net40\Xceed.Wpf.AvalonDock.Themes.VS2010.dll</HintPath>
+    </Reference>
+    <Reference Include="Xceed.Wpf.Toolkit, Version=4.0.0.0, Culture=neutral, PublicKeyToken=3e4669d2f30244f4, processorArchitecture=MSIL">
+      <HintPath>packages\Extended.Wpf.Toolkit.4.0.1\lib\net40\Xceed.Wpf.Toolkit.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="FilterRack\FilterVolumeSet.xaml.cs">
+      <DependentUpon>FilterVolumeSet.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="FilterRack\FilterVolume.xaml.cs">
+      <DependentUpon>FilterVolume.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="FilterRack\MonitorVolume.xaml.cs">
+      <DependentUpon>MonitorVolume.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="FilterRack\FilterLowPass.xaml.cs">
+      <DependentUpon>FilterLowPass.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="FilterRack\FilterHighPass.xaml.cs">
+      <DependentUpon>FilterHighPass.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="FilterRack\FilterRack.xaml.cs">
+      <DependentUpon>FilterRack.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="FilterRack\FilterFoldback.xaml.cs">
+      <DependentUpon>FilterFoldback.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="FilterRack\FilterRandomLoss.xaml.cs">
+      <DependentUpon>FilterRandomLoss.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="FilterRack\FilterRingmod.xaml.cs">
+      <DependentUpon>FilterRingmod.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="TempFileManager.cs" />
+    <Compile Include="Waveform\LivePlay.xaml.cs">
+      <DependentUpon>LivePlay.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Waveform\Waveform.xaml.cs">
+      <DependentUpon>Waveform.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Waveform\WaveformData.cs" />
+    <Page Include="FilterRack\FilterVolumeSet.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="FilterRack\FilterVolume.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="FilterRack\MonitorVolume.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="FilterRack\FilterLowPass.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="FilterRack\FilterHighPass.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="FilterRack\FilterRack.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="FilterRack\FilterFoldback.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="FilterRack\FilterRandomLoss.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="FilterRack\FilterRingmod.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -82,12 +187,21 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="AudioEffect.cs" />
     <Compile Include="AudioEncoder.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
     <Page Include="AudioConversion.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Waveform\LivePlay.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Waveform\Waveform.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

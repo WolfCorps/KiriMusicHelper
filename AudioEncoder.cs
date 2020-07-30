@@ -18,6 +18,7 @@ namespace KiriMusicHelper {
         public string OutputPath;
         public long Bitrate;
         public int SampleRate;
+        public string FileName { get; set; }
     }
 
 
@@ -44,10 +45,6 @@ namespace KiriMusicHelper {
             {
                 return null;
             }
-
-
-
-            
         }
 
 
@@ -57,7 +54,7 @@ namespace KiriMusicHelper {
             AudioConversionItem conversion,
             ConversionProgressEventArgs args);
 
-        event ConversionProgressEventHandler OnProgress;
+        public event ConversionProgressEventHandler OnProgress;
 
 
         public delegate void ConversionDoneEventHandler(
@@ -65,35 +62,38 @@ namespace KiriMusicHelper {
             AudioConversionItem conversion,
             IConversionResult result);
 
-        event ConversionDoneEventHandler OnConversionDone;
+        public event ConversionDoneEventHandler OnConversionDone;
 
 
 
-        private async Task AudioConvert(ConcurrentQueue<AudioConversionItem> filesToConvert, CancellationToken cancelToken)
+        public async Task AudioConvert(AudioConversionItem fileToConvert, CancellationToken cancelToken)
         {
-            while(filesToConvert.TryDequeue(out AudioConversionItem fileToConvert))
+            var info = await GetInfo(fileToConvert.InputFile.FullName);
+
+
+            IAudioStream audioStream = info.AudioStreams.FirstOrDefault()
+                ?.SetCodec(AudioCodec.libvorbis)
+                ?.SetSampleRate(fileToConvert.SampleRate);
+
+            if (audioStream.Bitrate > fileToConvert.Bitrate)
+                audioStream = audioStream.SetBitrate(fileToConvert.Bitrate);
+
+            var conversion = FFmpeg.Conversions.New()
+                .AddStream(audioStream)
+                .SetOutput(fileToConvert.OutputPath);
+
+            if (File.Exists(fileToConvert.OutputPath)) File.Delete(fileToConvert.OutputPath);
+
+            conversion.OnProgress += (sender, args) =>
             {
-                var info = await GetInfo(fileToConvert.InputFile.FullName);
+                OnProgress?.Invoke(this, fileToConvert, args);
+            };
 
-
-                IStream audioStream = info.AudioStreams.FirstOrDefault()
-                    ?.SetCodec(AudioCodec.vorbis)
-                    ?.SetBitrate(fileToConvert.Bitrate)
-                    ?.SetSampleRate(fileToConvert.SampleRate);
-
-                var conversion = FFmpeg.Conversions.New()
-                    .AddStream(audioStream)
-                    .SetOutput(fileToConvert.OutputPath);
-
-                conversion.OnProgress += (sender, args) => OnProgress?.Invoke(this, fileToConvert, args);
-
-                var result = await conversion.Start(cancelToken);
-                OnConversionDone?.Invoke(this, fileToConvert, result);
-
-            }
+            var result = await conversion.Start(cancelToken);
+            OnConversionDone?.Invoke(this, fileToConvert, result);
         }
 
-        private async Task VideoConvert(ConcurrentQueue<AudioConversionItem> filesToConvert, CancellationToken cancelToken)
+        public async Task VideoConvert(ConcurrentQueue<AudioConversionItem> filesToConvert, CancellationToken cancelToken)
         {
             while(filesToConvert.TryDequeue(out AudioConversionItem fileToConvert))
             {
