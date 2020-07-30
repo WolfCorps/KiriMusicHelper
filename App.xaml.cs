@@ -35,7 +35,7 @@ namespace KiriMusicHelper {
                         Username = System.Security.Principal.WindowsIdentity.GetCurrent().Name
                     };
                 });
-                throw new Exception("test");
+
                 App.Main();
             }
 
